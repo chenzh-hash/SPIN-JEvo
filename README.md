@@ -21,20 +21,20 @@ This repository does **not** require:
 - Target-specific structural templates
 - Quantitative fitness measurements
 
-## Workflow
 
-Starting from a FASTA file containing positive functional sequences, the training step labels original sequences as 1, generates matched 20%-mutated negative samples labeled as 0, writes all labeled sequences to tadA_lora_set.csv, and uses the full labeled CSV for LoRA training. Starting from the same positive FASTA file, the sampling step generates a 20%-mutated seed pool, writes the seed pool as CSV, uses the LoRA-tuned model to score variants during GA sampling, applies segmasker filtering, and writes final evolved sequences and scores to output files.
-
+## Repository structure
 
 ```text
 SPIN-JEvo/
 ├── data/
-│   └── tadA_VN.fasta
+│   ├── tadA_lora_set.csv
+│   └── tadA_seed.csv
+├── checkpoints/
+│   ├── tadA_10_model/
 ├── scripts/
 │   ├── train_tada_lora.sh
 │   └── evolve_tada_segmasker.sh
 ├── src/
-│   ├── prepare_fasta_inputs.py
 │   ├── train_lora_classifier.py
 │   ├── evolve_with_ga.py
 │   └── ga_utils.py
@@ -45,11 +45,31 @@ SPIN-JEvo/
 └── README.md
 ````
 
-## Adapter weights
+## Input files
 
-LoRA adapter weights for TadA and CcdA are available on figshare.
+### `data/tadA_lora_set.csv`
 
-**DOI:** [https://doi.org/10.6084/m9.figshare.31101862](https://doi.org/10.6084/m9.figshare.31101862)
+This is the labeled training set used for LoRA fine-tuning.
+
+It contains:
+
+* positive TadA sequences labeled as `1`
+* matched negative sequences labeled as `0`
+
+This file is used directly for training.
+No FASTA-to-CSV preprocessing is included in the current workflow.
+
+### `data/tadA_seed.csv`
+
+This file contains the initial seed pool for sampling.
+
+In the current setup, it is used directly as the starting population for GA sampling.
+
+### `tadA_10_model/`
+
+This is the existing LoRA adapter directory used for sampling by default.
+
+The sampling script loads this model unless you manually change the adapter path.
 
 ## Installation
 
@@ -68,63 +88,81 @@ pip install -r requirements.txt
 
 ## ESM-2 model path
 
-The scripts use the model in this order:
+The scripts resolve the ESM-2 model in this order:
 
-1. `MODEL_PATH`
-2. the first script argument
+1. `MODEL_PATH` environment variable
+2. the first argument passed to the script
 3. local path: `/your_own_path/esm2_t33_650M_UR50D`
-4. Hugging Face: `facebook/esm2_t33_650M_UR50D`
+4. Hugging Face fallback: `facebook/esm2_t33_650M_UR50D`
 
 ## Quick start
 
-### Use default input
+### Step 1: train a new LoRA model
 
 ```bash
 bash scripts/train_tada_lora.sh
+```
+
+This script:
+
+* reads `data/tadA_lora_set.csv`
+* trains a LoRA classifier
+* saves the new adapter to `checkpoints/tadA_lora_newmodel/`
+
+### Step 2: run GA sampling
+
+```bash
 bash scripts/evolve_tada_segmasker.sh
 ```
 
-### Use your own model path
+This script:
+
+* reads `data/tadA_seed.csv`
+* uses `tadA_10_model/` by default
+* runs GA sampling for 100 generations
+* applies segmasker filtering
+* saves final sequences and scores to `outputs/`
+
+## Use your own ESM-2 path
+
+### With environment variable
 
 ```bash
 MODEL_PATH=/path/to/esm2_t33_650M_UR50D bash scripts/train_tada_lora.sh
 MODEL_PATH=/path/to/esm2_t33_650M_UR50D bash scripts/evolve_tada_segmasker.sh
 ```
 
-### Pass model path as an argument
+### With positional argument
 
 ```bash
 bash scripts/train_tada_lora.sh /path/to/esm2_t33_650M_UR50D
 bash scripts/evolve_tada_segmasker.sh /path/to/esm2_t33_650M_UR50D
 ```
 
-### Use your own FASTA
-
-```bash
-FASTA_PATH=data/my_protein.fasta bash scripts/train_tada_lora.sh
-FASTA_PATH=data/my_protein.fasta bash scripts/evolve_tada_segmasker.sh
-```
-
-### Change seed pool size
-
-```bash
-SEED_POOL_SIZE=200 bash scripts/evolve_tada_segmasker.sh
-```
-
 ## Outputs
 
-### Training step
+### Training output
 
-* `data/tadA_lora_set.csv`
-* `checkpoints/tadA_lora/`
+```text
+checkpoints/tadA_lora_newmodel/
+```
 
-### Sampling step
+### Sampling outputs
 
-* seed pool CSV
-* final sampled CSV
-* score log / summary text
+Typical sampling outputs are written to:
+
+```text
+outputs/
+```
+
+They include:
+
+* sampled sequence CSV files
+* score log or summary text files
 
 ## Main hyperparameters
+
+The current scripts keep the main hyperparameters close to the original TadA scripts.
 
 ### LoRA training
 
@@ -146,6 +184,22 @@ SEED_POOL_SIZE=200 bash scripts/evolve_tada_segmasker.sh
 * acceptance scale: `0.125`
 * segmasker: enabled
 
+## Identity guidance
+
+The current repository version does **not** use identity-guided scoring.
+
+Sampling is based on:
+
+* LoRA model probability
+* genetic algorithm search
+* segmasker filtering
+
+## figshare
+
+LoRA adapter weights for TadA and CcdA are available on figshare:
+
+**DOI:** [https://doi.org/10.6084/m9.figshare.31101862](https://doi.org/10.6084/m9.figshare.31101862)
+
 ## Preprint
 
 An earlier version of this work was posted as a preprint:
@@ -155,10 +209,6 @@ An earlier version of this work was posted as a preprint:
 
 **Authors:**
 Zhihang Chen, Jinle Tang, Tingkai Zhang, Xing Zhang, Qinghui Nie, Jian Zhan, Yaoqi Zhou
-
-**Category:** Life Sciences × Artificial Intelligence
-
-**Keywords:** Directed evolution; Protein engineering; Protein Language Model
 
 > This work is currently available as a preprint and has not yet been certified by peer review.
 
@@ -190,8 +240,9 @@ If you use this repository, the LoRA weights, or the method in your work, please
 ## Notes
 
 * This repository focuses on a minimal TadA-centered workflow.
-* The method can be adapted to new proteins by replacing the FASTA input.
-* Source code and datasets are available at: `https://github.com/chenzh-hash/SPIN-JEvo`
+* It uses existing prepared CSV files directly.
+* It keeps the main logic close to the original scripts.
+* The default sampling model is `tadA_10_model/`, not the newly trained model.
 
 ## Contact
 
