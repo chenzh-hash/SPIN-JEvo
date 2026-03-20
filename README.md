@@ -1,5 +1,9 @@
 # SPIN-JEvo
 
+
+[![Preprint DOI](https://img.shields.io/badge/Preprint-10.65215%2FLTSpreprints.2026.01.29.000103-blue)](https://doi.org/10.65215/LTSpreprints.2026.01.29.000103)
+[![figshare DOI](https://img.shields.io/badge/figshare-10.6084%2Fm9.figshare.31101862-orange)](https://doi.org/10.6084/m9.figshare.31101862)
+
 SPIN-JEvo is a few-shot virtual directed evolution framework that combines a LoRA-tuned ESM-2 protein language model with a genetic algorithm to explore protein sequence space from small binary-labeled datasets.
 
 This repository keeps a minimal TadA workflow based directly on the original scripts:
