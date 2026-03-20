@@ -14,7 +14,7 @@ if [[ -z "${MODEL_NAME}" ]]; then
   fi
 fi
 
-ADAPTER_PATH="${ADAPTER_PATH:-${REPO_ROOT}/checkpoints/tadA_lora_new_model/}"
+ADAPTER_PATH="${ADAPTER_PATH:-${REPO_ROOT}/checkpoints/tadA_10_model/}"
 INPUT_CSV="${INPUT_CSV:-${REPO_ROOT}/data/tadA_seed.csv}"
 OUTPUT_DIR="${OUTPUT_DIR:-${REPO_ROOT}/outputs}"
 RUN_TAG="${RUN_TAG:-1}"
