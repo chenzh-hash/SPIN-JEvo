@@ -9,10 +9,10 @@ This repository keeps a minimal TadA workflow based directly on the original scr
 ## What is used in this repository
 
 - `data/tadA_lora_set.csv`: labeled training set used for LoRA training
-- `data/tadA_VN.csv`: 100-sequence initial seed pool used for GA sampling
-- `tadA_VN_blast20model/`: original LoRA adapter used for sampling
+- `data/tadA_seed.csv`: 100-sequence initial seed pool used for GA sampling
+- `tadA_10_model/`: original LoRA adapter used for sampling
 
-The new model trained by `train_tada_lora.sh` is saved to a new directory and is **not** used by the default sampling script. The default sampling script uses the original `tadA_VN_blast20model/` adapter.
+The new model trained by `train_tada_lora.sh` is saved to a new directory and is **not** used by the default sampling script. The default sampling script uses the original `tadA_10_model/` adapter.
 
 ## Repository structure
 
@@ -20,7 +20,7 @@ The new model trained by `train_tada_lora.sh` is saved to a new directory and is
 SPIN-JEvo/
 ├── data/
 │   ├── tadA_lora_set.csv
-│   └── tadA_VN.csv
+│   └── tadA_seed.csv
 ├── scripts/
 │   ├── train_tada_lora.sh
 │   └── evolve_tada_segmasker.sh
@@ -30,7 +30,7 @@ SPIN-JEvo/
 │   └── ga_utils.py
 ├── checkpoints/
 ├── outputs/
-├── tadA_VN_blast20model/
+├── tadA_10_model/
 ├── environment.yml
 ├── requirements.txt
 └── README.md
@@ -87,7 +87,7 @@ Default input and output:
 
 ## Run GA sampling with the original TadA adapter
 
-This step does **not** use the newly trained model by default. It uses the original `tadA_VN_blast20model/` adapter for sampling.
+This step does **not** use the newly trained model by default. It uses the original `tadA_10_model/` adapter for sampling.
 
 ```bash
 bash scripts/evolve_tada_segmasker.sh
@@ -97,15 +97,15 @@ Optional:
 
 ```bash
 MODEL_PATH=/path/to/esm2_t33_650M_UR50D bash scripts/evolve_tada_segmasker.sh
-ADAPTER_PATH=/path/to/tadA_VN_blast20model bash scripts/evolve_tada_segmasker.sh
-INPUT_CSV=data/tadA_VN.csv OUTPUT_DIR=outputs RUN_TAG=1 bash scripts/evolve_tada_segmasker.sh
+ADAPTER_PATH=/path/to/tadA_10_model bash scripts/evolve_tada_segmasker.sh
+INPUT_CSV=data/tadA_seed.csv OUTPUT_DIR=outputs RUN_TAG=1 bash scripts/evolve_tada_segmasker.sh
 ```
 
 Default input and output:
-- adapter: `tadA_VN_blast20model/`
-- input seed pool: `data/tadA_VN.csv`
-- output: `outputs/tadA_VN_prob_id15_4_ec1.csv`
-- log: `outputs/tadA_VN_prob_id15_4_ec1.txt`
+- adapter: `tadA_10_model/`
+- input seed pool: `data/tadA_seed.csv`
+- output: `outputs/tadA_seed_prob_id15_4_ec1.csv`
+- log: `outputs/tadA_seed_prob_id15_4_ec1.txt`
 
 ## Main settings kept from the original scripts
 
