@@ -23,19 +23,6 @@ This repository does **not** require:
 
 ## Workflow
 
-```mermaid
-flowchart LR
-    A[Positive-sequence FASTA] --> B[Generate labeled CSV]
-    B --> C[LoRA fine-tuning on ESM-2]
-    C --> D[Save LoRA adapter]
-    A --> E[Generate 20 percent mutated seed pool CSV]
-    D --> F[Load LoRA-tuned scorer]
-    E --> F
-    F --> G[GA sampling with segmasker]
-    G --> H[Final evolved sequences and scores]
-
-
-## Repository structure
 Starting from a FASTA file containing positive functional sequences, the training step labels original sequences as 1, generates matched 20%-mutated negative samples labeled as 0, writes all labeled sequences to tadA_lora_set.csv, and uses the full labeled CSV for LoRA training. Starting from the same positive FASTA file, the sampling step generates a 20%-mutated seed pool, writes the seed pool as CSV, uses the LoRA-tuned model to score variants during GA sampling, applies segmasker filtering, and writes final evolved sequences and scores to output files.
 
 
