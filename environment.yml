@@ -1,0 +1,16 @@
+name: spin-jevo
+channels:
+  - pytorch
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10
+  - pip
+  - pytorch
+  - numpy
+  - pandas
+  - scikit-learn
+  - pip:
+      - transformers
+      - peft
+      - datasets
