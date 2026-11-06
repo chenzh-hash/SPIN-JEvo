@@ -1,0 +1,141 @@
+{
+  "id": 31101862,
+  "title": "SPIN-JEvo: Navigating Protein Fitness Landscapes Through Simulated Evolutionary Jumps",
+  "doi": "10.6084/m9.figshare.31101862.v2",
+  "version": 2,
+  "url_public_html": "https://figshare.com/articles/journal_contribution/SPIN-dvEvo_Exploration_of_vast_functional_sequence_space_by_directed_virtual_evolution_from_a_local_sequence_cluster/31101862",
+  "description": "<p dir=\"ltr\"><b>SPIN-JEvo</b> is a few-shot virtual directed evolution framework that combines a LoRA-tuned ESM-2 protein language model with a genetic algorithm to efficiently explore protein sequence space and discover high-activity remote homologs from small, binary-labeled sequence datasets. By decoupling sequence exploration from functional constraint, SPIN-JEvo moves beyond the local search limitations of natural and conventional directed evolution. Starting from functional sequences, it first generates likely nonfunctional variants with ~20% random substitutions and then evolves them toward remote functional homologs using a genetic algorithm. Using only a few labeled sequences, SPIN-JEvo identified remote homologs within minutes for both TadA and CcdA, without requiring structural or target-specific information. </p><p dir=\"ltr\">This figshare entry provides the LoRA adapter weights fine-tuned on TadA and CcdA. </p><p dir=\"ltr\">Source code and datasets are available at <a href=\"https://github.com/chenzh-hash/SPIN-JEvo\" rel=\"noopener\" target=\"_new\">https://github.com/chenzh-hash/SPIN-JEvo</a>, and the framework can be readily adapted to new protein systems through LoRA fine-tuning.</p>",
+  "license": {
+    "value": 1,
+    "name": "CC BY 4.0",
+    "url": "https://creativecommons.org/licenses/by/4.0/"
+  },
+  "files": [
+    {
+      "id": 61156960,
+      "name": "adapter_config.json",
+      "size": 698,
+      "supplied_md5": "0cad5cf1371b26047f1c6691b3e1ebe5",
+      "download_url": "https://ndownloader.figshare.com/files/61156960"
+    },
+    {
+      "id": 61156963,
+      "name": "adapter_model.safetensors",
+      "size": 22817832,
+      "supplied_md5": "fb01513417c681b39718db01689f4894",
+      "download_url": "https://ndownloader.figshare.com/files/61156963"
+    },
+    {
+      "id": 61156969,
+      "name": "README.md",
+      "size": 5109,
+      "supplied_md5": "312c40531de7afce6acea2e8c3715374",
+      "download_url": "https://ndownloader.figshare.com/files/61156969"
+    },
+    {
+      "id": 61156966,
+      "name": "special_tokens_map.json",
+      "size": 125,
+      "supplied_md5": "85cb512e2bba471ec4ff32e06610cceb",
+      "download_url": "https://ndownloader.figshare.com/files/61156966"
+    },
+    {
+      "id": 61156972,
+      "name": "tokenizer_config.json",
+      "size": 1157,
+      "supplied_md5": "1d16ddc4e7efb404b6054736556a4e09",
+      "download_url": "https://ndownloader.figshare.com/files/61156972"
+    },
+    {
+      "id": 61156975,
+      "name": "vocab.txt",
+      "size": 93,
+      "supplied_md5": "9163f5c7cfb0f97197d192d34ebb9740",
+      "download_url": "https://ndownloader.figshare.com/files/61156975"
+    },
+    {
+      "id": 61156996,
+      "name": "adapter_config.json",
+      "size": 698,
+      "supplied_md5": "54fdd464bb81322fd1a31d5ee3338296",
+      "download_url": "https://ndownloader.figshare.com/files/61156996"
+    },
+    {
+      "id": 61156999,
+      "name": "adapter_model.safetensors",
+      "size": 22817832,
+      "supplied_md5": "d50d37f959915958e84416ebf3c5466b",
+      "download_url": "https://ndownloader.figshare.com/files/61156999"
+    },
+    {
+      "id": 61157002,
+      "name": "README.md",
+      "size": 5109,
+      "supplied_md5": "312c40531de7afce6acea2e8c3715374",
+      "download_url": "https://ndownloader.figshare.com/files/61157002"
+    },
+    {
+      "id": 61157005,
+      "name": "special_tokens_map.json",
+      "size": 125,
+      "supplied_md5": "85cb512e2bba471ec4ff32e06610cceb",
+      "download_url": "https://ndownloader.figshare.com/files/61157005"
+    },
+    {
+      "id": 61157008,
+      "name": "tokenizer_config.json",
+      "size": 1157,
+      "supplied_md5": "1d16ddc4e7efb404b6054736556a4e09",
+      "download_url": "https://ndownloader.figshare.com/files/61157008"
+    },
+    {
+      "id": 61157011,
+      "name": "vocab.txt",
+      "size": 93,
+      "supplied_md5": "9163f5c7cfb0f97197d192d34ebb9740",
+      "download_url": "https://ndownloader.figshare.com/files/61157011"
+    },
+    {
+      "id": 61157014,
+      "name": "adapter_config.json",
+      "size": 698,
+      "supplied_md5": "a3d456d380af2340e1b7d1c4af4ffe34",
+      "download_url": "https://ndownloader.figshare.com/files/61157014"
+    },
+    {
+      "id": 61157017,
+      "name": "adapter_model.safetensors",
+      "size": 22817832,
+      "supplied_md5": "3c9d7794c80d7b99f8d8a950e40fb231",
+      "download_url": "https://ndownloader.figshare.com/files/61157017"
+    },
+    {
+      "id": 61157020,
+      "name": "README.md",
+      "size": 5109,
+      "supplied_md5": "312c40531de7afce6acea2e8c3715374",
+      "download_url": "https://ndownloader.figshare.com/files/61157020"
+    },
+    {
+      "id": 61157023,
+      "name": "special_tokens_map.json",
+      "size": 125,
+      "supplied_md5": "85cb512e2bba471ec4ff32e06610cceb",
+      "download_url": "https://ndownloader.figshare.com/files/61157023"
+    },
+    {
+      "id": 61157026,
+      "name": "tokenizer_config.json",
+      "size": 1157,
+      "supplied_md5": "1d16ddc4e7efb404b6054736556a4e09",
+      "download_url": "https://ndownloader.figshare.com/files/61157026"
+    },
+    {
+      "id": 61157029,
+      "name": "vocab.txt",
+      "size": 93,
+      "supplied_md5": "9163f5c7cfb0f97197d192d34ebb9740",
+      "download_url": "https://ndownloader.figshare.com/files/61157029"
+    }
+  ]
+}
