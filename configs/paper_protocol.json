@@ -1,0 +1,51 @@
+{
+  "base_model": "facebook/esm2_t33_650M_UR50D",
+  "training": {
+    "epochs": 5,
+    "batch_size": 4,
+    "learning_rate": 0.0005,
+    "weight_decay": 0.001,
+    "lora_rank": 16,
+    "lora_alpha": 16,
+    "lora_dropout": 0.2,
+    "target_modules": [
+      "query",
+      "key",
+      "value"
+    ],
+    "original_max_grad_norm": 0.5,
+    "supplementary_max_grad_norm": 1.0
+  },
+  "original_tada": {
+    "positive_training_records": 10,
+    "population": 100,
+    "final_records_per_run": 100,
+    "generations": 100,
+    "initial_substitution_probability": 0.2,
+    "offspring_substitution_probability": 0.02,
+    "acceptance_scale": 0.125,
+    "retention_fraction": 0.75
+  },
+  "supplementary": {
+    "population": 10,
+    "final_records_per_run": 10,
+    "S1_runs": 10,
+    "S2_runs": 10,
+    "S5_to_S8_runs_per_condition": 100,
+    "S6_rates": [
+      0.15,
+      0.2,
+      0.25,
+      0.3
+    ],
+    "S7_training_rates": [
+      0.2,
+      0.25,
+      0.3
+    ],
+    "S7_initialization": 0.2,
+    "S6_S7_reference20": "historical original, not matched retraining20"
+  },
+  "weights_included": false,
+  "exact_all_run_reproduction_claimed": false
+}
