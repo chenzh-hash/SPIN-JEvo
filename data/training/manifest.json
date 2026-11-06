@@ -1,0 +1,24 @@
+[
+  {
+    "path": "data/training/tada_round1_train_historical.csv",
+    "source": "project/work/jcim_revision/inputs/tada_round1_train_historical.csv",
+    "sha256": "622154ed7e6dd539e47729a423766e005d38b92c6cea955df78ee86b12be0d40",
+    "n_records": 20,
+    "label_counts": {
+      "0": 10,
+      "1": 10
+    },
+    "checkpoint_training_pairing": "NOT_VERIFIED"
+  },
+  {
+    "path": "data/training/tada_round2_train.csv",
+    "source": "project/work/jcim_revision/inputs/tada_round2_train.csv",
+    "sha256": "c2a74354f0e9dbc7c758712ce61be78ec9a171ea819ef521ba3ba0782669781a",
+    "n_records": 111,
+    "label_counts": {
+      "0": 67,
+      "1": 44
+    },
+    "checkpoint_training_pairing": "NOT_VERIFIED"
+  }
+]

@@ -1,8 +1,19 @@
+"""Run SPIN-JEvo sequence-ranking-guided genetic search.
+
+The model output is treated as a task-specific ranking score.  It is not a
+calibrated probability of experimental activity.
+"""
+
+from __future__ import annotations
+
 import argparse
+import json
 import os
 import random
 import shutil
 import subprocess
+import tempfile
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -10,7 +21,8 @@ import torch
 from peft import PeftModel
 from transformers import AutoTokenizer, EsmForSequenceClassification
 
-from ga_utils import mutate_crossover
+from ga_utils import AMINO_ACIDS, mutate_crossover
+
 
 os.environ["WANDB_DISABLED"] = "true"
 os.environ["WANDB_MODE"] = "disabled"
@@ -18,155 +30,222 @@ os.environ["WANDB_SILENT"] = "true"
 
 MODEL_POS_INDEX = 1
 ESM_MAX_LEN = 1022
-PROB_BS = 32
-MUT_RATE = 0.20
-EC_PICK = 4
-EPOCHS = 200
-AA_STD = list("ACDEFGHIKLMNPQRSTVWY")
 
 
 def parse_args() -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Run probability-only GA sampling with segmasker filtering.")
+    parser = argparse.ArgumentParser(
+        description="Run LoRA-ranking-guided GA sequence sampling."
+    )
     parser.add_argument("--model-name", required=True, help="Base ESM-2 model name or local path.")
     parser.add_argument("--adapter-path", required=True, help="Path to the LoRA adapter directory.")
-    parser.add_argument("--input-csv", required=True, help="Initial seed pool CSV.")
-    parser.add_argument("--output-dir", required=True, help="Directory for output CSV and TXT files.")
-    parser.add_argument("--run-tag", default="1", help="Suffix tag used in the original output filenames.")
+    parser.add_argument("--input-csv", required=True, help="Seed CSV containing Sequence and label columns.")
+    parser.add_argument("--output-dir", required=True, help="Directory for generated populations and logs.")
+    parser.add_argument("--run-tag", default="1", help="Identifier used in output filenames.")
+    parser.add_argument("--sequence-column", default="Sequence")
+    parser.add_argument("--label-column", default="label")
+    parser.add_argument("--positive-label", type=int, default=1)
+    parser.add_argument("--generations", type=int, default=100)
+    parser.add_argument("--initial-substitution-fraction", type=float, default=0.20)
+    parser.add_argument("--mutation-rate", type=float, default=0.02)
+    parser.add_argument(
+        "--mating-pool-fraction",
+        type=float,
+        default=0.75,
+        help=(
+            "Highest-scoring population fraction eligible as parents. "
+            "The archived implementation discarded the bottom quartile, "
+            "therefore retaining 0.75."
+        ),
+    )
+    parser.add_argument("--acceptance-scale", type=float, default=0.125)
+    parser.add_argument("--batch-size", type=int, default=32)
+    parser.add_argument("--max-length", type=int, default=1000)
+    parser.add_argument("--segmasker-cutoff", type=int, default=5)
+    parser.add_argument("--disable-segmasker", action="store_true")
+    parser.add_argument("--seed", type=int, default=8893)
     return parser.parse_args()
 
 
-def segmasker_available() -> bool:
-    return shutil.which("segmasker") is not None
+def validate_args(args: argparse.Namespace) -> None:
+    for name in ["initial_substitution_fraction", "mutation_rate", "mating_pool_fraction"]:
+        value = getattr(args, name)
+        if not 0.0 <= value <= 1.0:
+            raise ValueError(f"--{name.replace('_', '-')} must be between 0 and 1")
+    if args.generations < 1:
+        raise ValueError("--generations must be positive")
+    if args.batch_size < 1:
+        raise ValueError("--batch-size must be positive")
+    if args.acceptance_scale < 0.0:
+        raise ValueError("--acceptance-scale must be non-negative")
 
 
-_warned_segmasker = False
-
-
-def run_segmasker(input_fasta: str, output_interval: str) -> None:
-    subprocess.run(f"segmasker -in {input_fasta} -out {output_interval}", shell=True, check=True)
-
-
-def parse_interval_file(interval_file: str, cutoff: int = 5) -> bool:
-    with open(interval_file, "r") as handle:
-        for line in handle:
-            if " - " in line:
-                start, end = map(int, line.strip().split(" - "))
-                if (end - start + 1) > cutoff:
-                    return True
+def has_long_low_complexity_segment(sequence: str, cutoff: int) -> bool:
+    """Return whether NCBI segmasker reports a segment longer than ``cutoff``."""
+    with tempfile.TemporaryDirectory(prefix="spin_jevo_segmasker_") as tmp:
+        fasta_path = Path(tmp) / "sequence.fasta"
+        interval_path = Path(tmp) / "sequence.interval"
+        fasta_path.write_text(f">query\n{sequence}\n")
+        subprocess.run(
+            ["segmasker", "-in", str(fasta_path), "-out", str(interval_path)],
+            check=True,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+        for line in interval_path.read_text().splitlines():
+            if " - " not in line:
+                continue
+            start, end = map(int, line.strip().split(" - "))
+            if end - start + 1 > cutoff:
+                return True
     return False
 
 
-def check_disorder_in_sequence(sequence: str, sequence_id: int) -> bool:
-    global _warned_segmasker
-    if not segmasker_available():
-        if not _warned_segmasker:
-            print("[Warn] segmasker not found. Disorder filtering is skipped.")
-            _warned_segmasker = True
-        return False
-
-    fasta_path = f"temp_seqcrtbstr_{sequence_id}.fasta"
-    interval_path = f"temp_seqcrtbstr_{sequence_id}.interval"
-    with open(fasta_path, "w") as handle:
-        handle.write(f">seq_{sequence_id}\n{sequence}\n")
-    run_segmasker(fasta_path, interval_path)
-    flag = parse_interval_file(interval_path)
-    os.remove(fasta_path)
-    os.remove(interval_path)
-    return flag
+def mutate_initial_sequence(sequence: str, fraction: float, rng: np.random.Generator) -> str:
+    child = list(sequence)
+    count = int(round(len(child) * fraction))
+    if count == 0:
+        return sequence
+    positions = rng.choice(len(child), size=count, replace=False)
+    for position in positions:
+        choices = [aa for aa in AMINO_ACIDS if aa != child[position]]
+        child[position] = str(rng.choice(choices))
+    return "".join(child)
 
 
-def probs_for_sequences(model, tokenizer, seqs, device):
-    out_all = []
-    with torch.inference_mode():
-        for i in range(0, len(seqs), PROB_BS):
-            chunk = seqs[i:i + PROB_BS]
-            toks = tokenizer(
-                chunk,
-                return_tensors="pt",
-                padding=True,
-                truncation=True,
-                max_length=ESM_MAX_LEN,
-            ).to(device)
-            out = model(**toks)
-            prob = torch.softmax(out.logits, dim=-1)[:, MODEL_POS_INDEX]
-            out_all.append(prob.detach().cpu().numpy())
-            del toks, out, prob
-            if device.type == "cuda":
-                torch.cuda.empty_cache()
-    return np.concatenate(out_all, axis=0) if out_all else np.zeros((0,), dtype=np.float32)
+@torch.inference_mode()
+def scores_for_sequences(model, tokenizer, sequences, device, batch_size, max_length):
+    values = []
+    for start in range(0, len(sequences), batch_size):
+        chunk = sequences[start : start + batch_size]
+        tokens = tokenizer(
+            chunk,
+            return_tensors="pt",
+            padding=True,
+            truncation=True,
+            max_length=min(max_length, ESM_MAX_LEN),
+        ).to(device)
+        logits = model(**tokens).logits
+        scores = torch.softmax(logits.float(), dim=-1)[:, MODEL_POS_INDEX]
+        values.append(scores.cpu().numpy())
+    return np.concatenate(values) if values else np.zeros(0, dtype=np.float32)
 
 
 def main() -> None:
     args = parse_args()
+    validate_args(args)
+    py_rng = random.Random(args.seed)
+    np_rng = np.random.default_rng(args.seed)
+    torch.manual_seed(args.seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(args.seed)
 
     tokenizer = AutoTokenizer.from_pretrained(args.model_name)
-    base_model = EsmForSequenceClassification.from_pretrained(args.model_name, num_labels=2)
+    base_model = EsmForSequenceClassification.from_pretrained(
+        args.model_name, num_labels=2
+    )
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = PeftModel.from_pretrained(base_model, args.adapter_path).to(device).eval()
 
-    origin_name = os.path.basename(args.input_csv)
-    output_stem = os.path.splitext(origin_name)[0] + f"_prob_id20_tada10_{EC_PICK}_run{args.run_tag}"
-    os.makedirs(args.output_dir, exist_ok=True)
-    txt_path = os.path.join(args.output_dir, output_stem + ".txt")
-    csv_path = os.path.join(args.output_dir, output_stem + ".csv")
+    frame = pd.read_csv(args.input_csv)
+    missing = {args.sequence_column, args.label_column} - set(frame.columns)
+    if missing:
+        raise ValueError(f"Missing required seed columns: {sorted(missing)}")
+    frame = frame[frame[args.label_column].eq(args.positive_label)].copy()
+    if len(frame) < 2:
+        raise ValueError("At least two positive seed sequences are required")
+    frame = frame.sample(frac=1, random_state=args.seed).reset_index(drop=True)
+    frame["Sequence"] = frame[args.sequence_column].astype(str).str.slice(stop=args.max_length)
+    frame["Sequence"] = [
+        mutate_initial_sequence(seq, args.initial_substitution_fraction, np_rng)
+        for seq in frame["Sequence"]
+    ]
+    frame["score"] = scores_for_sequences(
+        model,
+        tokenizer,
+        frame["Sequence"].tolist(),
+        device,
+        args.batch_size,
+        args.max_length,
+    )
 
-    df = pd.read_csv(args.input_csv)
-    X = df[df["label"] == 1].sample(frac=1).reset_index(drop=True)
-    X["Sequence"] = X["Sequence"].astype(str).str.slice(stop=1000)
+    output_dir = Path(args.output_dir)
+    output_dir.mkdir(parents=True, exist_ok=True)
+    stem = f"{Path(args.input_csv).stem}_run{args.run_tag}"
+    csv_path = output_dir / f"{stem}.csv"
+    log_path = output_dir / f"{stem}.txt"
+    config_path = output_dir / f"{stem}.config.json"
+    config_path.write_text(json.dumps(vars(args), indent=2, default=str) + "\n")
+    log_path.write_text(
+        f"generation:0,mean_score:{frame['score'].mean():.8g},"
+        f"median_score:{frame['score'].median():.8g}\n"
+    )
 
-    for idx in range(len(X)):
-        seq = list(X.at[idx, "Sequence"])
-        for pos in range(len(seq)):
-            if np.random.rand() < MUT_RATE:
-                choices = list(set(AA_STD) - {seq[pos]})
-                seq[pos] = np.random.choice(list(choices))
-        X.at[idx, "Sequence"] = "".join(seq)
+    use_segmasker = not args.disable_segmasker and shutil.which("segmasker") is not None
+    if not args.disable_segmasker and not use_segmasker:
+        print("[Warn] segmasker not found; low-complexity filtering is disabled")
 
-    X["prob"] = probs_for_sequences(model, tokenizer, X["Sequence"].tolist(), device)
-    X["score"] = X["prob"]
+    mating_pool = frame["Sequence"].tolist()
+    population_size = len(frame)
+    for generation in range(1, args.generations + 1):
+        children = []
+        observed = set()
+        attempts = 0
+        max_attempts = population_size * 1000
+        while len(children) < population_size and attempts < max_attempts:
+            attempts += 1
+            parent1 = py_rng.choice(mating_pool)
+            parent2 = py_rng.choice(mating_pool)
+            child = mutate_crossover(
+                parent1,
+                parent2,
+                mutation_rate=args.mutation_rate,
+                rng=py_rng,
+            )
+            if child in observed:
+                continue
+            if use_segmasker and has_long_low_complexity_segment(
+                child, args.segmasker_cutoff
+            ):
+                continue
+            observed.add(child)
+            children.append(child)
+        if len(children) != population_size:
+            raise RuntimeError(
+                f"Could create only {len(children)} unique children after "
+                f"{attempts} attempts"
+            )
 
-    print("str_generation:0")
-    print(f"gen:0, mean_prob:{float(X['prob'].mean()):.6e}")
+        child_scores = scores_for_sequences(
+            model,
+            tokenizer,
+            children,
+            device,
+            args.batch_size,
+            args.max_length,
+        )
+        for index, (child, child_score) in enumerate(zip(children, child_scores)):
+            current_score = max(float(frame.at[index, "score"]), 1e-12)
+            ratio = float(child_score) / current_score
+            acceptance_probability = min(1.0, ratio * args.acceptance_scale)
+            if ratio >= 1.0 or py_rng.random() < acceptance_probability:
+                frame.at[index, "Sequence"] = child
+                frame.at[index, "score"] = child_score
 
-    fittest_sequences = X["Sequence"].tolist()
-
-    for generation in range(1, EPOCHS + 1):
-        print(f"generation:{generation}")
-
-        new_population = []
-        while len(new_population) < X.shape[0]:
-            p1 = random.choice(fittest_sequences)
-            p2 = random.choice(fittest_sequences)
-            child = mutate_crossover(p1, p2)
-            if not check_disorder_in_sequence(child, len(new_population)):
-                new_population.append(child)
-                new_population = list(set(new_population))
-
-        X["child_seq"] = new_population
-        X["child_prob"] = probs_for_sequences(model, tokenizer, X["child_seq"].tolist(), device)
-        X["child_score"] = X["child_prob"]
-
-        for i in range(len(X)):
-            cur_prob = float(X.iloc[i]["prob"])
-            nxt_prob = float(X.iloc[i]["child_prob"])
-            acceptance_ratio = (torch.tensor(nxt_prob) / torch.tensor(cur_prob)).item()
-            if (acceptance_ratio >= 1.0) or (torch.rand(1).item() < acceptance_ratio * 0.125):
-                X.at[i, "Sequence"] = X.iloc[i]["child_seq"]
-                X.at[i, "prob"] = X.iloc[i]["child_prob"]
-                X.at[i, "score"] = X.iloc[i]["child_prob"]
-
-        idx_sorted = np.argsort(np.array(X["prob"].to_list()))
-        sorted_pop = [X["Sequence"].to_list()[i] for i in idx_sorted]
-        fittest_sequences = sorted_pop[len(sorted_pop) // EC_PICK:]
-
-        mean_prob = float(X["prob"].mean())
-        print(f"gen:{generation}, mean_prob:{mean_prob:.6e}")
-        with open(txt_path, "a") as handle:
-            handle.write(f"gen:{generation}, mean_prob:{mean_prob:.6e}\n")
-        X[["Sequence", "prob", "score"]].to_csv(csv_path, index=False)
+        keep = max(2, int(np.ceil(population_size * args.mating_pool_fraction)))
+        keep = min(population_size, keep)
+        mating_pool = (
+            frame.sort_values("score", ascending=False)["Sequence"].head(keep).tolist()
+        )
+        with log_path.open("a") as handle:
+            handle.write(
+                f"generation:{generation},mean_score:{frame['score'].mean():.8g},"
+                f"median_score:{frame['score'].median():.8g}\n"
+            )
+        frame[["Sequence", "score"]].to_csv(csv_path, index=False)
 
     print(f"Saved final population to: {csv_path}")
-    print(f"Saved generation log to: {txt_path}")
+    print(f"Saved generation log to: {log_path}")
+    print(f"Saved run configuration to: {config_path}")
 
 
 if __name__ == "__main__":

@@ -1,0 +1,112 @@
+[
+  {
+    "path": ".gitignore",
+    "bytes": 86,
+    "sha256": "2f80a1faaff52e1dc89a6ca55e2bd74b9e7f0dfe44faaa4b52d2ae0b72d7af5f"
+  },
+  {
+    "path": "README.md",
+    "bytes": 7848,
+    "sha256": "689cb756744c4329c3dbf8bb2caf1729586defdaed5a33a2fb3aed54528c1212"
+  },
+  {
+    "path": "configs/paper_protocol.json",
+    "bytes": 1155,
+    "sha256": "157242ad2b7cee0f045b0be9485216e87e8cf9d4551bf918570acaf09f1d7c2d"
+  },
+  {
+    "path": "data/README.md",
+    "bytes": 1143,
+    "sha256": "afa483249348a63802d828ab3cf460c08383a686a6d778fcac1bec5ca0a3f1af"
+  },
+  {
+    "path": "data/reference_seeds/ccda_functional_seed_records_22.fasta",
+    "bytes": 1054,
+    "sha256": "c6483b53028a5570e02f24ba6dac295240b9774b9bf7085b3755ae43f3adf96b"
+  },
+  {
+    "path": "data/reference_seeds/ccda_functional_seeds_21_unique.fasta",
+    "bytes": 1134,
+    "sha256": "8c1a2ca81a29f5a5852060ab077161526ab608db28d474a463999591d68fcf6d"
+  },
+  {
+    "path": "data/reference_seeds/tada_functional_seeds_10.fasta",
+    "bytes": 1773,
+    "sha256": "c3d4e597cf1d9b4fba1a62e732e431ec842f5e736588491cad20f415715caca1"
+  },
+  {
+    "path": "data/tadA_lora_set.csv",
+    "bytes": 7128,
+    "sha256": "8270260e727b5d4aa4de5322da92bc07be26f658af26b575bce949a98c0b4ab3"
+  },
+  {
+    "path": "data/tadA_seed.csv",
+    "bytes": 17118,
+    "sha256": "5ccb01115ddf4206f54ec312bd95032c13698f45ba818a73204f96f1c80cbb6c"
+  },
+  {
+    "path": "data/training/ccda_positive_22.csv",
+    "bytes": 1124,
+    "sha256": "481592c447715018d6f75d11bf902bf81bec2582d2a13d5dda3387a32b20028e"
+  },
+  {
+    "path": "data/training/manifest.json",
+    "bytes": 714,
+    "sha256": "c8771f354b1a330347b70c56cdc597ee88b102d7657665241144f6bf03c8e809"
+  },
+  {
+    "path": "data/training/tada_positive_10.csv",
+    "bytes": 1819,
+    "sha256": "c13ae5ff82a328e10b2e1b25da4c892feb17dc63e380b0732a1c27014e437943"
+  },
+  {
+    "path": "data/training/tada_round1_train_historical.csv",
+    "bytes": 3415,
+    "sha256": "622154ed7e6dd539e47729a423766e005d38b92c6cea955df78ee86b12be0d40"
+  },
+  {
+    "path": "data/training/tada_round2_train.csv",
+    "bytes": 18030,
+    "sha256": "c2a74354f0e9dbc7c758712ce61be78ec9a171ea819ef521ba3ba0782669781a"
+  },
+  {
+    "path": "docs/weights_figshare.json",
+    "bytes": 5733,
+    "sha256": "0fd5c94943c2203f54b4a7f91619a7dbde606409fa7e13acbcd7449e8b4288e4"
+  },
+  {
+    "path": "environment.yml",
+    "bytes": 217,
+    "sha256": "93db5daeb50ec275b0ac0b404d8687f6bd65e63d1df1af3f750295d24ca6544e"
+  },
+  {
+    "path": "requirements.txt",
+    "bytes": 57,
+    "sha256": "fb3d2517923603d355b14daea04b063516971713da7cd1558f5cc93836ff6a93"
+  },
+  {
+    "path": "scripts/evolve_tada_segmasker.sh",
+    "bytes": 1374,
+    "sha256": "989be06551683043dfe8349a27de067ea0cf60d9503ef5bc5a4a029a99a21413"
+  },
+  {
+    "path": "scripts/train_tada_lora.sh",
+    "bytes": 953,
+    "sha256": "a3e590c8af22dbb564d6b819401d9a87817b3cd5b243d598de8cf93ad43b22ae"
+  },
+  {
+    "path": "src/evolve_with_ga.py",
+    "bytes": 9880,
+    "sha256": "6a08e712280f1fa5d1024b3b2c228a252c2e88e70a2a3193e8a284c42d25b288"
+  },
+  {
+    "path": "src/ga_utils.py",
+    "bytes": 1512,
+    "sha256": "8a4affb02dbff1ea7736aaa77ad8ab26f6a8f045f31c4232f565fd2f95808fc9"
+  },
+  {
+    "path": "src/train_lora_classifier.py",
+    "bytes": 4018,
+    "sha256": "055128215ec13b7d29dac209b87e7d881abc4a0872a62d06855d7e64244b837b"
+  }
+]

@@ -9,8 +9,8 @@ dependencies:
   - pytorch
   - numpy
   - pandas
-  - scikit-learn
   - pip:
       - transformers
       - peft
       - datasets
+      - accelerate
